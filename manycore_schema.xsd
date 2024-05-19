@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+	targetNamespace="https://www.york.ac.uk/physics-engineering-technology/ManycoreSystems"
+	xmlns="https://www.york.ac.uk/physics-engineering-technology/ManycoreSystems"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified">
+	<!-- Types -->
+	<xs:simpleType name="nonZeroUnsignedByte">
+		<xs:annotation>
+			<xs:documentation>A number between 1 and 255, both inclusive.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:unsignedByte">
+			<xs:minInclusive value="1" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="computationStepsRange">
+		<xs:annotation>
+			<xs:documentation>Valid range of steps for a Task's computation cost.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:unsignedByte">
+			<xs:minInclusive value="10" />
+			<xs:maxInclusive value="200" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="communicationCostRange">
+		<xs:annotation>
+			<xs:documentation>Valid range of number of times a packet can be transmitted across an
+				edge of the task graph.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:unsignedShort">
+			<xs:minInclusive value="10" />
+			<!-- RegExp pattern for effectively geeting a multiple of 10 -->
+			<!-- xs:pattern always anchored at start and end: ^[1-9][0-9]*0$ -->
+			<xs:pattern value="[1-9][0-9]*0" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="direction">
+		<xs:annotation>
+			<xs:documentation>Enum values for an router channel's direction.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="North" />
+			<xs:enumeration value="South" />
+			<xs:enumeration value="East" />
+			<xs:enumeration value="West" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="SinkSourceType">
+		<xs:attribute name="coreID" type="xs:unsignedShort" use="required">
+			<xs:annotation>
+				<xs:documentation>The ID of the core (router) connected to this edge router.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="direction" type="direction" use="required">
+			<xs:annotation>
+				<xs:documentation>The link used to communicate with the router.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="taskid" type="xs:unsignedShort" use="required">
+			<xs:annotation>
+				<xs:documentation>The ID of the task allocated to this edge router.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+
+	<!-- Structure -->
+	<xs:element name="ManycoreSystem">
+		<xs:annotation>
+			<xs:documentation>Encloses the required information to describe a manycore system at a
+				given instant.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="TaskGraph" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>GraphML-like representation of the system's task graph.
+							Each Task is a node and each Edge symbolises interdependencies between
+							tasks.</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Task" minOccurs="1" maxOccurs="unbounded">
+								<xs:annotation>
+									<xs:documentation>A node in the system's task graph.</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="id" type="xs:unsignedShort" use="required">
+										<xs:annotation>
+											<xs:documentation>A unique number identifier assigned to
+												each task.</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="computationCost"
+										type="computationStepsRange" use="required">
+										<xs:annotation>
+											<xs:documentation>The computational cost associated with
+												this task.</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Edge" minOccurs="1" maxOccurs="unbounded">
+								<xs:annotation>
+									<xs:documentation>An Edge represents a directional connection
+										between two nodes in the graph.</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="from" type="xs:unsignedShort" use="required">
+										<xs:annotation>
+											<xs:documentation>The unique numerical identifier of the
+												starting node (Task) this Edge departs from.</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="to" type="xs:unsignedShort" use="required">
+										<xs:annotation>
+											<xs:documentation>The unique numerical identifier of the
+												destination node (Task) this Edge arrives to.</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="communicationCost"
+										type="communicationCostRange"
+										use="required">
+										<xs:annotation>
+											<xs:documentation>The number of times packets will be
+												transmitted across this Edge.</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Cores" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>The Cores element is a container for each core in the
+							system.</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Core" minOccurs="1" maxOccurs="unbounded">
+								<xs:annotation>
+									<xs:documentation>A physical core.</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Router" minOccurs="1" maxOccurs="1">
+											<xs:annotation>
+												<xs:documentation>The Router associated with this
+													physical core.</xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:anyAttribute processContents="lax" />
+											</xs:complexType>
+										</xs:element>
+
+										<xs:element name="Channels" minOccurs="0" maxOccurs="1">
+											<xs:annotation>
+												<xs:documentation>The Channels element wraps each
+													Channel associated with this core's router.</xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="Channel" minOccurs="4"
+														maxOccurs="4">
+														<xs:annotation>
+															<xs:documentation>A specific Channel. A
+																Core might have a maximum of 4
+																channels, one for each possible
+																communication direction.</xs:documentation>
+														</xs:annotation>
+														<xs:complexType>
+															<xs:attribute name="direction"
+																type="direction"
+																use="required">
+																<xs:annotation>
+																	<xs:documentation>The direction
+																		of this channel.</xs:documentation>
+																</xs:annotation>
+															</xs:attribute>
+															<xs:attribute name="actualComCost"
+																type="xs:unsignedLong"
+																use="required">
+																<xs:annotation>
+																	<xs:documentation>The actual
+																		communication cost.</xs:documentation>
+																</xs:annotation>
+															</xs:attribute>
+															<xs:attribute name="bandwidth"
+																type="xs:unsignedLong"
+																use="required">
+																<xs:annotation>
+																	<xs:documentation>The bandwidth
+																		of this channel.</xs:documentation>
+																</xs:annotation>
+															</xs:attribute>
+															<xs:anyAttribute processContents="lax" />
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="id" type="xs:unsignedShort" use="required">
+										<xs:annotation>
+											<xs:documentation>A unique number identifier assigned to
+												each Core.</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="allocatedTask" type="xs:unsignedShort"
+										use="optional">
+										<xs:annotation>
+											<xs:documentation>The Task currently being processed by
+												the Core.</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:anyAttribute processContents="lax" />
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Borders" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>The Borders element is a container for each Sink/Source
+							(border or edge routers) in the system.</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Source" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:annotation>
+										<xs:documentation>A source.</xs:documentation>
+									</xs:annotation>
+									<xs:complexContent>
+										<xs:extension base="SinkSourceType">
+											<xs:attribute name="actualComCost"
+												type="xs:unsignedLong"
+												use="optional">
+												<xs:annotation>
+													<xs:documentation>The actual communication cost.</xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+										</xs:extension>
+									</xs:complexContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Sink" minOccurs="0" maxOccurs="unbounded"
+								type="SinkSourceType">
+								<xs:annotation>
+									<xs:documentation>A sink.</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="rows" type="nonZeroUnsignedByte" use="required">
+				<xs:annotation>
+					<xs:documentation>The manycore system's number of rows.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="columns" type="nonZeroUnsignedByte" use="required">
+				<xs:annotation>
+					<xs:documentation>The manycore system's number of columns.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="routingAlgo" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>The routing algorithm currently in use by the system.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
